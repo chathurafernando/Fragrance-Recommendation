@@ -16,8 +16,8 @@ const Write = () => {
     try{
       const formData = new FormData();
       formData.append("file",file)
-      const res = await axios.post("http://localhost:8800/upload", formData);
-
+      const res = await axios.post("/upload", formData);
+      return res.data;
       console.log(res.data)
     }
     catch(err){
@@ -29,16 +29,18 @@ const Write = () => {
 
 const handleClick = async e =>{
   e.preventDefault()
-  const imgUrl =await upload()
+  const imgUrl = await upload()
+  const url = state ? `/api/posts/${state.id}` : "/api/posts";
+  console.log("Making request to:", url);
 
   try{
-    state?await axios.put(`/posts/${state.id}`,{
+    state ? await axios.put(`/posts/${state.id}`,{
       title,
       desc:value,
       cat,
       img:file? imgUrl:""
     }):
-    await axios.post(`/posts`,{
+    await axios.post(`/posts`, {
       title,
       desc:value,
       cat,
@@ -46,7 +48,7 @@ const handleClick = async e =>{
       date:moment(Date.now()).format("YYYY-MM-DD HH::mm:ss")
     })
   }catch(err){
-    console.log(err)
+    console.error("Axios Error:", err);
   }
 }
 

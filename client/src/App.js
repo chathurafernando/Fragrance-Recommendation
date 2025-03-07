@@ -16,6 +16,8 @@ import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import "./style.scss"
 // import"./styles/navbar.scss"
+import"./styles/login.scss"
+import"./styles/register.scss"
 
 const Layout = () => {
   return(
