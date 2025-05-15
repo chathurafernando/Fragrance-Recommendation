@@ -6,7 +6,7 @@ const Home = () => {
   const [posts, setPosts] = useState([]);
   const location = useLocation(); // Get current URL path and query params
   const category = new URLSearchParams(location.search).get("cat"); // Get 'cat' param
-  
+
 
   useEffect(() => {
     const fetchData = async () => {
@@ -28,11 +28,16 @@ const Home = () => {
       <div className="posts">
         {posts.map((post) => (
           <div className="post" key={post.id}>
-             <div className="img">
+            <div className="img">
               <img
-                src={post?.img && post.img.startsWith("http") ? post.img : post.img} // Directly use post.img for both local and external URLs
+                src={
+                  post?.img && post.img.startsWith("http")
+                    ? post.img
+                    : `./uploads/${post.img}`  // Adjusted to point to the local uploads folder
+                }
                 alt="Post Image"
               />
+
             </div>
             <div className="content">
               <Link className="link" to={`/post/${post.id}`}>

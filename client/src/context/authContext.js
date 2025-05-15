@@ -1,39 +1,67 @@
-import axios from "axios";
-import { createContext, useEffect, useState } from "react";
+import React, { createContext, useState, useContext, useEffect } from 'react';
 
-export const AuthContext = createContext();
+const AuthContext = createContext();
 
-export const AuthContextProvider = ({ children }) => { // Fix: changed "Children" to "children"
-    const [currentUser, setCurrentUser] = useState(
-        JSON.parse(localStorage.getItem("user")) || null
-    );
+export const useAuth = () => {
+  return useContext(AuthContext);
+};
 
-    const login = async (inputs) => {
-        const res = await axios.post("/auth/login", inputs);
-        setCurrentUser(res.data);
-    };
+export const AuthProvider = ({ children }) => {
+  const [user, setUser] = useState(null);
+  const [token, setToken] = useState(localStorage.getItem('token') || null);
+  const [onboardingstep, setOnboardingStepState] = useState(localStorage.getItem('onboardingstep') || 0);
+  const [loading, setLoading] = useState(true);
 
-    const logout = async () => {
-        try {
-          await fetch("http://localhost:3000/api/logout", {
-            method: "POST",
-            credentials: "include", // Important for handling cookies
-          });
-          setCurrentUser(null); // Ensure the state updates after logout
-        } catch (err) {
-          console.error("Logout failed", err);
-        }
-      };
-      
-    
+  const setOnboardingStep = (step) => {
+    setOnboardingStepState(step);
+    localStorage.setItem('onboardingstep', step);
+  };
 
-    useEffect(() => {
-        localStorage.setItem("user", JSON.stringify(currentUser));
-    }, [currentUser]);
+  const login = (userDetails, token) => {
+    setUser(userDetails);
+    setToken(token);
+    setOnboardingStep(userDetails.onboardingstep); // <- This now updates both state + localStorage
+    localStorage.setItem('token', token);
+    localStorage.setItem('user', JSON.stringify(userDetails));
+  };
 
-    return (
-        <AuthContext.Provider value={{ currentUser, login, logout }}>
-            {children} {/* Fix: changed "Children" to "children" */}
-        </AuthContext.Provider>
-    );
+  const logout = async () => {
+    try {
+      setUser(null);
+      setToken(null);
+      setOnboardingStep(null);
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      localStorage.removeItem('onboardingstep');
+
+      await fetch('/auth/logout', {
+        method: 'POST',
+        credentials: 'include',
+      });
+    } catch (err) {
+      console.error("Error during logout:", err);
+    }
+  };
+
+  useEffect(() => {
+    const storedUser = localStorage.getItem('user');
+    const storedOnboardingStep = localStorage.getItem('onboardingstep');
+
+    if (storedUser && token) {
+      const parsedUser = JSON.parse(storedUser);
+      setUser(parsedUser);
+      setOnboardingStepState(storedOnboardingStep || 0);
+    }
+    setLoading(false);
+  }, [token]);
+
+  if (loading) {
+    return <div>Loading...</div>;
+  }
+
+  return (
+    <AuthContext.Provider value={{ user, token, onboardingstep, login, logout, setOnboardingStep }}>
+      {children}
+    </AuthContext.Provider>
+  );
 };

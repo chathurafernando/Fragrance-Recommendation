@@ -1,0 +1,34 @@
+.bottom-nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    background-color: #f8f9fa; /* Light background (Bootstrap light) */
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    border-top: 1px solid #ddd;
+    padding: 8px 0;
+    z-index: 1000;
+  }
+  
+  .bottom-nav .nav-item {
+    flex: 1;
+    text-align: center;
+    text-decoration: none;
+    color: #333;
+    font-size: 12px;
+  }
+  
+  .bottom-nav .nav-item.active {
+    color: #007bff; /* Bootstrap primary */
+  }
+  
+  .bottom-nav .nav-item div {
+    margin-top: 4px;
+  }
+  
+  body {
+    padding-bottom: 60px; /* Make sure page content doesn’t hide behind nav */
+  }
+  

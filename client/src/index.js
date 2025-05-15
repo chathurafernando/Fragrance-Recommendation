@@ -3,14 +3,15 @@ import ReactDOM from 'react-dom/client';
 import './index.css';
 import App from './App';
 import reportWebVitals from './reportWebVitals';
-import { AuthContextProvider } from './context/authContext'; // ✅ Import the correct provider
+import { AuthProvider } from './context/authContext'; // ✅ Import the correct provider
+import 'bootstrap/dist/css/bootstrap.min.css';
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
   <React.StrictMode>
-    <AuthContextProvider> {/* ✅ Use AuthContextProvider instead */}
+    <AuthProvider> {/* ✅ Use AuthContextProvider instead */}
       <App />
-    </AuthContextProvider>
+    </AuthProvider>
   </React.StrictMode>
 );
 
