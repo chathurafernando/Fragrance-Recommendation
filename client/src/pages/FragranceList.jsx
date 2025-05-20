@@ -10,13 +10,14 @@ const FragranceList = () => {
   const [brandId, setBrandId] = useState('');
   const [availability, setAvailability] = useState('');
   const [sortBy, setSortBy] = useState('');
+  const [search, setSearch] = useState('');
 
   const [loadingBrands, setLoadingBrands] = useState(false);
   const [loadingFragrances, setLoadingFragrances] = useState(false);
 
   const [topBanner, setTopBanner] = useState(null);
-const navigate = useNavigate(); // init navigation
-  // ✅ Fetch brands (method)
+
+  // Fetch brands
   const fetchBrands = async () => {
     setLoadingBrands(true);
     try {
@@ -29,7 +30,7 @@ const navigate = useNavigate(); // init navigation
     }
   };
 
-  // ✅ Fetch fragrances (method)
+  // Fetch fragrances with filters and search
   const fetchFragrances = async () => {
     setLoadingFragrances(true);
     try {
@@ -37,6 +38,7 @@ const navigate = useNavigate(); // init navigation
       if (brandId) params.brandId = brandId;
       if (availability) params.availability = availability;
       if (sortBy) params.sortBy = sortBy;
+      if (search.trim() !== '') params.search = search.trim();
 
       const response = await axios.get('/fragrances/filter', { params });
       setFragrances(response.data);
@@ -47,40 +49,100 @@ const navigate = useNavigate(); // init navigation
     }
   };
 
-  // ✅ Fetch top banner
+  // Fetch top banner
   const fetchTopBanner = async () => {
     try {
-      const res = await axios.get('/advertisement/promotion/PerfumeExplorer_Top');
-      setTopBanner(res.data[0]);
-    } catch (err) {
+      const topRes = await axios.get('/advertisement/promotion/PerfumeExplorer_Top');
+
+      // For top banner
+      if (topRes?.data && topRes.data.length > 0) {
+        const randomTopIndex = Math.floor(Math.random() * topRes.data.length);
+        setTopBanner(topRes.data[randomTopIndex]);
+      }    } catch (err) {
       console.error('Failed to fetch top banner:', err);
     }
   };
 
-  // 🔥 useEffect only calls method
+  // Initial load
   useEffect(() => {
     fetchBrands();
     fetchTopBanner();
   }, []);
 
+  // Refetch fragrances when filters change
   useEffect(() => {
     fetchFragrances();
   }, [brandId, availability, sortBy]);
 
+const FragranceCard = ({ fragrance }) => {
+  const { name, image, brand, id } = fragrance;
+  const navigate = useNavigate();
+
+  const handleCardClick = () => {
+    navigate(`/user/fragranceDetails/${id}`);
+  };
+
   return (
-    <Container>
+    <Card key={id} className="shadow-sm text-center">
+      <Card.Img
+        variant="top"
+        src={image}
+        style={{
+          height: '150px',
+          objectFit: 'contain',
+          backgroundColor: '#f8f9fa',
+          margin: '0 auto'
+        }}
+      />
+      <Card.Body className="d-flex flex-column align-items-center">
+        <Card.Title className="fs-6 mb-1">{name}</Card.Title>
+        <Card.Text className="text-muted small mb-2">
+          {typeof brand === 'object' ? brand.name : brand}
+        </Card.Text>
+        <Button
+          variant="info"
+          onClick={handleCardClick}
+        >
+          Find out more
+        </Button>
+      </Card.Body>
+    </Card>
+  );
+};
+  return (
+    <Container fluid>
       <h2 className="my-4">Fragrance Collection</h2>
 
-      {/* 🔥 Top Banner */}
-      {topBanner && (
-        <div className="mb-4">
-          <img
+      {/* Top Banner */}
+{topBanner && (
+        <Card className="mb-4"  style={{ maxHeight: '350px', overflow: 'hidden', borderRadius: '8px' }}>
+          <Card.Img
             src={topBanner.bannerUrl}
-            alt={topBanner.description}
-            style={{ width: '100%', height: 'auto', borderRadius: '8px', objectFit: 'contain' }}
+            alt="Top Banner"
+            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
           />
-        </div>
+        </Card>
       )}
+      
+      {/* Search Bar */}
+      <Form className="mb-3" onSubmit={(e) => { e.preventDefault(); fetchFragrances(); }}>
+        <Row>
+          <Col md={10}>
+            <Form.Control
+              type="text"
+              placeholder="Search fragrances by name or description..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </Col>
+          <Col md={2}>
+            <Button variant="primary" type="submit" className="w-100">
+              Search
+            </Button>
+          </Col>
+        </Row>
+      </Form>
+
 
       {/* Filters */}
       <Row className="mb-4">
@@ -107,45 +169,41 @@ const navigate = useNavigate(); // init navigation
           </Form.Select>
         </Col>
         <Col md={3}>
-          <Button variant="secondary" onClick={() => {
-            setBrandId('');
-            setAvailability('');
-            setSortBy('');
-          }}>Reset Filters</Button>
+          <Button
+            variant="secondary"
+            onClick={() => {
+              setBrandId('');
+              setAvailability('');
+              setSortBy('');
+              setSearch('');
+              fetchFragrances();
+            }}
+          >
+            Reset Filters
+          </Button>
         </Col>
       </Row>
 
-      {/* 🔄 Loading Spinner */}
+      {/* Loading Spinner */}
       {(loadingBrands || loadingFragrances) && (
         <div className="text-center my-4">
           <Spinner animation="border" variant="primary" />
         </div>
       )}
 
-      {/* Cards */}
+      {/* Fragrance Cards */}
       <Row>
+        {fragrances.length === 0 && !loadingFragrances && (
+          <div className="text-center w-100">
+            <p>No fragrances found for the selected criteria.</p>
+          </div>
+        )}
         {fragrances.map((fragrance) => (
           <Col key={fragrance.id} md={4} className="mb-4">
-            <Card>
-              <Card.Img
-                variant="top"
-                src={fragrance.image || 'https://via.placeholder.com/300x200'}
-                style={{ width: '100%', height: '250px', objectFit: 'cover' }}
-              />
-              <Card.Body>
-                <Card.Title>{fragrance.name}</Card.Title>
-                <Card.Text>
-                  Brand ID: {fragrance.bid} <br />
-                  Created At: {new Date(fragrance.createdAt).toLocaleDateString()}
-                </Card.Text>
-                 <Button
-                      variant="info"
-                      onClick={() => navigate(`/user/fragranceDetails/${fragrance.id}`)}
-                    >
-                      Find out more
-                    </Button>
-              </Card.Body>
-            </Card>
+
+
+            <FragranceCard fragrance={fragrance} />
+
           </Col>
         ))}
       </Row>

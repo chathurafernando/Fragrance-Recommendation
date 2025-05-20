@@ -3,7 +3,6 @@ import { User } from "../models/user.js"; // Import the User model
 import { uploadFile } from "../utils/firebase.js";
 
 
-
 export const addBusiness = async (req, res) => {
   try {
     const {
@@ -21,6 +20,12 @@ export const addBusiness = async (req, res) => {
 
     if (!req.file) {
       return res.status(400).json({ error: 'No image file uploaded!' });
+    }
+
+    // Validate Sri Lankan phone number (10 digits starting with 0)
+    const phoneRegex = /^0\d{9}$/;
+    if (!phoneRegex.test(phoneOffice)) {
+      return res.status(400).json({ error: 'Please enter a valid 10-digit Sri Lankan phone number starting with 0' });
     }
 
     const uploadedImageUrl = await uploadFile(req.file);

@@ -1,11 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Container, Row, Col, Card, Button } from 'react-bootstrap';
-import { ChevronLeft, ChevronRight } from 'react-bootstrap-icons';
+import { Container, Row, Col, Card, Button, Carousel, } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import '../styles/HomePage.scss';
 
-// Reusable Fragrance Card
+
 const FragranceCard = ({ name, image, onLike, fragranceId }) => {
   const [isLiked, setIsLiked] = useState(false);
   const navigate = useNavigate();
@@ -25,7 +24,11 @@ const FragranceCard = ({ name, image, onLike, fragranceId }) => {
       <Card.Img
         variant="top"
         src={image}
-        style={{ height: '150px', objectFit: 'cover' }}
+        style={{
+          height: '150px',
+          objectFit: 'contain',
+          backgroundColor: '#f8f9fa'
+        }}
       />
       <Card.Body>
         <Card.Title className="fs-6">{name}</Card.Title>
@@ -57,6 +60,7 @@ const HomePage = () => {
   const [topBanner, setTopBanner] = useState(null);
   const [rightBanner, setRightBanner] = useState(null);
   const [wishlistFragranceIds, setWishlistFragranceIds] = useState([]);
+  const [itemsPerSlide, setItemsPerSlide] = useState(4);
 
   const perPage = 8;
 
@@ -80,8 +84,21 @@ const HomePage = () => {
     try {
       const topRes = await axios.get('/advertisement/promotion/Homepage_Top');
       const rightRes = await axios.get('/advertisement/promotion/Homepage_Side');
-      setTopBanner(topRes?.data[0]);
-      setRightBanner(rightRes?.data[0]);
+
+      console.log({ topRes, rightRes });
+
+
+      // For top banner
+      if (topRes?.data && topRes.data.length > 0) {
+        const randomTopIndex = Math.floor(Math.random() * topRes.data.length);
+        setTopBanner(topRes.data[randomTopIndex]);
+      }
+
+      // For right banner
+      if (rightRes?.data && rightRes.data.length > 0) {
+        const randomRightIndex = Math.floor(Math.random() * rightRes.data.length);
+        setRightBanner(rightRes.data[randomRightIndex]);
+      }
     } catch (err) {
       console.error('Failed to fetch banners:', err);
     }
@@ -179,34 +196,46 @@ const HomePage = () => {
     }
   };
 
+  const chunkArray = (arr, size) => {
+    return Array.from({ length: Math.ceil(arr.length / size) }, (_, i) =>
+      arr.slice(i * size, i * size + size)
+    );
+  };
+
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth >= 992) setItemsPerSlide(4);
+      else if (window.innerWidth >= 768) setItemsPerSlide(2);
+      else setItemsPerSlide(1);
+    };
+
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  const fragranceChunks = chunkArray(popularFragrances, itemsPerSlide);
+
+
   return (
     <Container fluid className="p-4">
       <h4 className="fw-semibold">Good Morning, Chathura! 👋</h4>
       <p className="text-muted">Find your perfect fragrance today</p>
 
       {/* Top Banner */}
-      <Row className="mb-4">
-        <Col>
-          {topBanner && (
-            <img
-              src={topBanner.bannerUrl}
-              alt={topBanner.description}
-              style={{
-                width: '100%',
-                height: '100%',
-                objectFit: 'contain',
-                borderRadius: '8px',
-                backgroundColor: '#f8f9fa',
-              }}
-            />
-          )}
-        </Col>
-      </Row>
-
+      {topBanner && (
+        <Card className="mb-4" style={{ maxHeight: '350px', overflow: 'hidden', borderRadius: '8px' }}>
+          <Card.Img
+            src={topBanner.bannerUrl}
+            alt="Top Banner"
+            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+          />
+        </Card>
+      )}
       <Row>
         <Col md={9}>
           {/* Recommended */}
-          <h5>🎯 Recommended for You</h5>
+          <h5 className='mt-4 mb-4'>🎯 Recommended for You</h5>
           <Row className="mb-3">
             {paginatedFragrances.map((f) => (
               <Col key={f.id} xs={12} sm={6} md={3} className="mb-3">
@@ -232,34 +261,36 @@ const HomePage = () => {
           </div>
 
           {/* Popular Picks */}
-          <h5 className="d-flex align-items-center justify-content-between">
-            <span>🔥 Popular Picks</span>
-            <div>
-              <Button variant="light" className="me-2" onClick={() => scrollPopular('left')}>
-                <ChevronLeft />
-              </Button>
-              <Button variant="light" onClick={() => scrollPopular('right')}>
-                <ChevronRight />
-              </Button>
-            </div>
-          </h5>
-          <div ref={popularRef} style={{ overflowX: 'hidden', whiteSpace: 'nowrap' }} className="mb-4">
-            {popularFragrances.map((f) => (
-              <div key={f.id} style={{ display: 'inline-block', marginRight: '15px' }}>
-                <FragranceCard
-                  key={f.id}
-                  name={f.name}
-                  image={f.image}
-                  fragranceId={f.id}
-                  onLike={handleLike}
-                  isLiked={wishlistFragranceIds.includes(f.id)}
-                />
-              </div>
+
+          <h5 className='mb-4'>🔥 Popular Picks</h5>
+
+
+          <Carousel indicators={false} interval={null} variant="dark">
+            {fragranceChunks.map((chunk, index) => (
+              <Carousel.Item key={index}>
+                <Row className="g-3">
+                  {chunk.map((f) => (
+                    <Col
+                      key={f.id}
+                      lg={3}
+                      md={itemsPerSlide === 2 ? 6 : 12}
+                      xs={12}
+                    >
+                      <FragranceCard key={f.id}
+                        name={f.name}
+                        image={f.image}
+                        fragranceId={f.id}
+                        onLike={handleLike}
+                        isLiked={wishlistFragranceIds.includes(f.id)} />
+                    </Col>
+                  ))}
+                </Row>
+              </Carousel.Item>
             ))}
-          </div>
+          </Carousel>
 
           {/* New Arrivals */}
-          <h5>✨ New Arrivals</h5>
+          <h5 className='mt-4 mb-4'>✨ New Arrivals</h5>
           <Row className="mb-3">
             {newArrivals.map((f) => (
               <Col key={f.id} xs={12} sm={6} md={3} className="mb-3">

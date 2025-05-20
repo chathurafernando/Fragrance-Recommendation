@@ -19,6 +19,31 @@ const WishlistPage = () => {
   const totalPages = Math.ceil(wishlist.length / perPage);
   const paginatedWishlist = wishlist.slice((currentPage - 1) * perPage, currentPage * perPage);
 
+const FragranceCard = ({ name, image, fragranceId }) => {
+  const navigate = useNavigate();
+
+  const handleCardClick = () => {
+    navigate(`/user/fragranceDetails/${fragranceId}`);
+  };
+
+  return (
+    <Card className="shadow-sm" onClick={handleCardClick} style={{ cursor: 'pointer' }}>
+      <Card.Img
+        variant="top"
+        src={image}
+        style={{
+          height: '150px',
+          objectFit: 'contain',
+          backgroundColor: '#f8f9fa'
+        }}
+      />
+      <Card.Body>
+        <Card.Title className="fs-6">{name}</Card.Title>
+      </Card.Body>
+    </Card>
+  );
+};
+
   useEffect(() => {
     if (userId) {
       fetchWishlist();
@@ -64,7 +89,7 @@ const WishlistPage = () => {
   if (loading) return <div>Loading your wishlist...</div>;
 
   return (
-    <div className="container mt-4">
+    <div className="container-fluid mt-4">
       <div className="d-flex justify-content-between align-items-center mb-3">
         <h2>Your Wishlist</h2>
         <Button variant="primary" onClick={handleCompare}>
@@ -81,24 +106,32 @@ const WishlistPage = () => {
             <>
               <Row>
                 {paginatedWishlist.map((item) => (
+                  
                   <Col key={item.id} xs={12} sm={6} md={3} className="mb-3">
-                    <Card className="h-100 d-flex flex-column" style={{ minHeight: '320px' }}>
-  <Card.Img
-    variant="top"
-    src={item.fragrance.image}
-    alt={item.fragrance.name}
-    style={{ height: '200px', objectFit: 'cover' }}
-  />
-  <Card.Body className="d-flex flex-column justify-content-between">
-    <Card.Title className="fs-6 text-center mb-3">{item.fragrance.name}</Card.Title>
-    <Button
-      variant="info"
-      onClick={() => navigate(`/user/fragranceDetails/${item.fragrance.id}`)}
-    >
-      Find out more
-    </Button>
-  </Card.Body>
-</Card>
+                    {/* <Card className="h-100 d-flex flex-column" style={{ minHeight: '320px' }}>
+                      <Card.Img
+                        variant="top"
+                        src={item.fragrance.image}
+                        alt={item.fragrance.name}
+                        style={{ height: '200px', objectFit: 'cover' }}
+                      />
+                      <Card.Body className="d-flex flex-column justify-content-between">
+                        <Card.Title className="fs-6 text-center mb-3">{item.fragrance.name}</Card.Title>
+                        <Button
+                          variant="info"
+                          onClick={() => navigate(`/user/fragranceDetails/${item.fragrance.id}`)}
+                        >
+                          Find out more
+                        </Button>
+                      </Card.Body>
+                    </Card> */}
+
+                    <FragranceCard
+                  key={item.fragrance.id}
+                  name={item.fragrance.name}
+                  image={item.fragrance.image}
+                  fragranceId={item.fragrance.id}
+                />
 
                   </Col>
                 ))}

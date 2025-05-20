@@ -1,7 +1,7 @@
 import { DataTypes } from 'sequelize';
 import { sequelize } from '../db.js';
-import { User } from './user.js';
-import { Advertisement } from './Advertisement.js';
+// import { User } from './user.js';
+// import { Advertisement } from './Advertisement.js';
 
 export const BusinessInfo = sequelize.define('BusinessInfo', {
   id: {

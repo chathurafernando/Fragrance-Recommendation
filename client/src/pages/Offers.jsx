@@ -41,7 +41,7 @@ const Offers = () => {
   }, []);
 
   return (
-    <Container className="py-4">
+    <div className="py-4">
       <h2 className="mb-4 text-center">🔥 Hot Offers Just for You!</h2>
       <Row>
         {offers.map(offer => (
@@ -73,7 +73,7 @@ const Offers = () => {
           </Col>
         ))}
       </Row>
-    </Container>
+    </div>
   );
 };
 

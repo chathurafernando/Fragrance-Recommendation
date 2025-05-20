@@ -3,6 +3,7 @@ import Fragrance from "../models/fragrance.js";
 import VendorProduct from "../models/vendorProducts.js";
 import Product from "../models/products.js";
 import { sequelize } from '../db.js';
+import Notes from "../models/notes.js";
 
 
 export const searchFragrances = async (req, res) => {
@@ -39,38 +40,32 @@ export const getCompareFragrances = async (req, res) => {
       return res.status(400).json({ error: 'You must provide 1 to 3 fragrance IDs.' });
     }
 
-    // Step 1: Fetch fragrance details (basic info + products without price aggregation)
+    // Fetch fragrance details + products + notes with noteType
     const fragrances = await Fragrance.findAll({
-      where: {
-        id: {
-          [Op.in]: ids
-        }
-      },
-      attributes: ['id', 'name', 'description','image'],
+      where: { id: { [Op.in]: ids } },
+      attributes: ['id', 'name', 'description', 'image'],
       include: [
         {
           model: Product,
           as: 'products',
-          include: [
-            {
-              model: VendorProduct,
-              as: 'vendorOffers'
-            }
-          ]
+          include: [{ model: VendorProduct, as: 'vendorOffers' }]
+        },
+        {
+          model: Notes,
+          as: 'fragranceNotes',
+          through: { attributes: ['noteType'] }
         }
       ]
     });
 
-    // Step 2: For each fragrance, fetch its price range separately
+    // Fetch price ranges per fragrance
     const priceRanges = await VendorProduct.findAll({
-      include: [
-        {
-          model: Product,
-          as: 'product',
-          where: { fragrance_id: { [Op.in]: ids } },
-          attributes: ['fragrance_id']
-        }
-      ],
+      include: [{
+        model: Product,
+        as: 'product',
+        where: { fragrance_id: { [Op.in]: ids } },
+        attributes: ['fragrance_id']
+      }],
       attributes: [
         [col('product.fragrance_id'), 'fragrance_id'],
         [fn('MIN', col('price')), 'min_price'],
@@ -80,20 +75,32 @@ export const getCompareFragrances = async (req, res) => {
       raw: true
     });
 
-    // Step 3: Merge price range into fragrance data
-    const fragrancesWithPrices = fragrances.map(frag => {
+    // Map fragrances adding min_price, max_price, and grouped notes inline
+    const fragrancesWithPricesAndNotes = fragrances.map(frag => {
+      const noteGroups = {};
+
+      frag.fragranceNotes.forEach(note => {
+        // Adjust join table alias if needed:
+        const noteType = note.fragranceNotes_Notes?.noteType || 'Other';
+        if (!noteGroups[noteType]) noteGroups[noteType] = [];
+        noteGroups[noteType].push({ id: note.id, name: note.name });
+      });
+
       const price = priceRanges.find(p => p.fragrance_id === frag.id);
+
       return {
         ...frag.toJSON(),
         min_price: price ? price.min_price : null,
-        max_price: price ? price.max_price : null
+        max_price: price ? price.max_price : null,
+        noteGroups
       };
     });
 
-    res.json(fragrancesWithPrices);
+    res.json(fragrancesWithPricesAndNotes);
   } catch (err) {
     console.error('Error fetching fragrances for comparison:', err);
     res.status(500).json({ error: 'An error occurred while fetching comparison fragrances.' });
   }
 };
+
 

@@ -5,14 +5,12 @@ import {
   createBrowserRouter,
   RouterProvider,
   Outlet,
-  useLocation,
 } from "react-router-dom";
 import Register from './pages/Register';
 import Login from './pages/Login';
-import Home from './pages/Home';
-import Write from './pages/Write';
+// import Home from './pages/Home';
+// import Write from './pages/Write';
 import Navbar from './components/Navbar';
-import BottomNav from './components/Footer';
 import "./style.scss";
 import "./styles/login.scss"
 import "./styles/register.scss"
@@ -41,55 +39,33 @@ import AddAdvertisementForm from './pages/AddAdvertisementForm ';
 import OffersGrid from './components/OffersGrid'
 import VendorBannerPayment from './pages/VendorBannerPayment';
 import Offers from './pages/Offers'
-import { useAuth } from './context/authContext';
-import VendorBottomNav from './components/VendorBottomNav';
+import AdminOverviewReport from './pages/AdminOverviewReport';
+import Footer from './components/Footer';
 
 // Layout component with Navbar and Footer
 const Layout = () => {
-    const location = useLocation();
-  const { user } = useAuth();
-
-  const showBottomNav = () => {
-    // Only show BottomNav for 'user' role on specific paths
-    const userPaths = [
-      '/user/Dashboard',
-      '/user/offers',
-      '/user/wishlist',
-      '/user/filter',
-    ];
-    return user?.role === 'user' && userPaths.some(path => location.pathname.startsWith(path));
-  };
-
-  const showVendorBottomNav = () => {
-    const vendorPaths = [
-      '/vendor/dashboard',
-      '/vendor/advertisements',
-      '/vendor/add-products',
-    ];
-    return user?.role === 'vendor' && vendorPaths.some(path => location.pathname.startsWith(path));
-  };
-
   return (
-    <>
+    <div style={{
+      display: 'flex',
+      flexDirection: 'column',
+      minHeight: '100vh', // Ensures layout fills the whole viewport
+    }}>
       <Navbar />
-      <Outlet />
-      {showBottomNav() && <BottomNav />}   
-            {showVendorBottomNav() && <VendorBottomNav />}
-
-       </>
+      <div style={{ flex: 1 }}> {/* Pushes footer down */}
+        <Outlet />
+      </div>
+      <Footer /> {/* Will only appear at the bottom of the page */}
+    </div>
   );
 };
-
 
 const router = createBrowserRouter([
   {
     path: "/",
     element: <Layout />,
     children: [
-      { path: "/", element: <Home /> },
-      // { path: "/post/:id", element: <Single /> },
+      { path: "/", element: <Register /> },
 
-      // Admin Routes
       {
         path: "/admin",
         element: (
@@ -155,6 +131,14 @@ const router = createBrowserRouter([
         ),
       },
       {
+        path: "/admin/overview",
+        element: (
+          <ProtectedRoute requiredRole="admin">
+            <AdminOverviewReport />
+          </ProtectedRoute>
+        ),
+      },
+      {
         path: "/user/your-favourite-notes",
         element: (
           <ProtectedRoute requiredRole="user">
@@ -198,7 +182,7 @@ const router = createBrowserRouter([
         path: "/user/compare",
         element: (
           <ProtectedRoute requiredRole="user">
-            <FragranceCompare/>
+            <FragranceCompare />
           </ProtectedRoute>
         ),
       },
@@ -206,7 +190,7 @@ const router = createBrowserRouter([
         path: "/user/filter",
         element: (
           <ProtectedRoute requiredRole="user">
-            <FragranceList/>
+            <FragranceList />
           </ProtectedRoute>
         ),
       },
@@ -214,7 +198,7 @@ const router = createBrowserRouter([
         path: "/user/offers",
         element: (
           <ProtectedRoute requiredRole="user">
-            <Offers/>
+            <Offers />
           </ProtectedRoute>
         ),
       },
@@ -235,6 +219,15 @@ const router = createBrowserRouter([
           </ProtectedRoute>
         ),
       },
+      {
+        path: "/vendor/edit-products/:productId",
+        element: (
+          <ProtectedRoute requiredRole="vendor">
+            <Products />
+          </ProtectedRoute>
+        ),
+      },
+
       {
         path: "/vendor/dashboard",
         element: (
@@ -260,6 +253,14 @@ const router = createBrowserRouter([
         ),
       },
       {
+        path: "/vendor/advertisements/:id",
+        element: (
+          <ProtectedRoute requiredRole="vendor">
+            <AddAdvertisementForm />
+          </ProtectedRoute>
+        ),
+      },
+      {
         path: "/vendor/payment",
         element: (
           <ProtectedRoute requiredRole="vendor">
@@ -275,14 +276,7 @@ const router = createBrowserRouter([
           </ProtectedRoute>
         ),
       },
-      {
-        path: "/write",
-        element: (
-          <ProtectedRoute requiredRole="vendor">
-            <Write />
-          </ProtectedRoute>
-        ),
-      },
+
       { path: "*", element: <div>404 - Page Not Found</div> },
     ],
   },

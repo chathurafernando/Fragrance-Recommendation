@@ -124,17 +124,6 @@ export const addFragrance = async (req, res) => {
 export const getFragrance = async (req, res) => {
   try {
     const fragrances = await Fragrance.findAll({
-            attributes: [
-        'id',
-        'name',
-        'description',
-        'image',
-        'looking_for',
-        'age_range',
-        'occasion',
-        'smell',
-        'intensity'
-      ],
       include: [
         {
           model: Notes,
@@ -168,7 +157,8 @@ export const getFragrance = async (req, res) => {
 
       fragrance.fragranceNotes.forEach(note => {
         // Access noteType correctly from the join table
-        const noteType = note.FragranceNote.noteType; // Directly access the join table data
+        const noteType = note.FragranceNote.noteType;
+        // Directly access the join table data
         const noteId = note.id;
 
         if (noteType && noteGroups[noteType]) {
@@ -185,6 +175,11 @@ export const getFragrance = async (req, res) => {
         },
         description: fragrance.description,
         image: fragrance.image,
+        looking_for: fragrance.looking_for,
+        age_range: fragrance.age_range,
+        occasion: fragrance.occasion,
+        smell: fragrance.smell,
+        intensity: fragrance.intensity,
         noteGroups: noteGroups,
       };
     });
@@ -195,7 +190,6 @@ export const getFragrance = async (req, res) => {
     res.status(500).json({ error: "An error occurred while fetching all fragrances." });
   }
 };
-
 export const updateFragrance = async (req, res) => {
   try {
     const { id } = req.params;

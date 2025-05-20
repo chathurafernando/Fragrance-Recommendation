@@ -1,9 +1,10 @@
-import React, { useState } from "react";
+import React, { Fragment, useState } from "react";
 import { Container, Card, Form, Button } from "react-bootstrap";
 import { FaCloudUploadAlt } from "react-icons/fa";
 import axios from "axios";
 import { useAuth } from "../context/authContext";
 import { useNavigate } from "react-router-dom";
+import ProgressTracker from "../components/ProgressTracker";
 
 const RegisterBusiness = () => {
 
@@ -20,7 +21,13 @@ const RegisterBusiness = () => {
   });
   const [errorMessage, setErrorMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
+  const [currentStep, setCurrentStep] = React.useState(2); // Example: currently on step 2
 
+    const steps = [
+    { id: 1, label: 'Account Setup' },
+    { id: 2, label: 'Busness Registration' },
+    { id: 3, label: 'Dashbaord' }
+  ];
 
   const [imageFile, setImageFile] = useState(null);
 
@@ -96,7 +103,13 @@ const RegisterBusiness = () => {
   };
 
   return (
-    <Container className="d-flex justify-content-center align-items-center vh-100">
+<Fragment>
+    <ProgressTracker currentStep={currentStep} steps={steps} />
+
+    <Container className="d-flex justify-content-center align-items-center">
+
+     
+
       <Card style={{ width: "350px" }} className="p-4">
         <h5 className="text-center mb-4">Register Business</h5>
         {errorMessage && (
@@ -147,6 +160,7 @@ const RegisterBusiness = () => {
         </Form>
       </Card>
     </Container>
+    </Fragment>
   );
 };
 

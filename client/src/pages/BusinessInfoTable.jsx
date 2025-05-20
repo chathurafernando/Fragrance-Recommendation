@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Table, Button, Modal, Form } from "react-bootstrap";
+import { Table, Button, Modal, Form, Spinner, Toast, ToastContainer } from "react-bootstrap";
 import { FaEdit, FaTrash, FaCheckCircle, FaBan } from "react-icons/fa";
 import axios from "axios";
 
@@ -10,11 +10,19 @@ const BusinessInfoTable = () => {
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedBusiness, setSelectedBusiness] = useState(null);
   const [formValues, setFormValues] = useState({});
+  const [formErrors, setFormErrors] = useState({});
   const [imageFile, setImageFile] = useState(null);
-  const [successMessage, setSuccessMessage] = useState("");
-  const [errorMessage, setErrorMessage] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [toasts, setToasts] = useState([]);
 
+  const showToast = (message, type = "success") => {
+    const newToast = {
+      id: Date.now(),
+      message,
+      type
+    };
+    setToasts(prev => [...prev, newToast]);
+  };
 
   useEffect(() => {
     const fetchBusinesses = async () => {
@@ -24,6 +32,7 @@ const BusinessInfoTable = () => {
         setBusinesses(data);
       } catch (err) {
         console.error("Error fetching businesses:", err);
+        showToast("Failed to load businesses. Please try again.", "danger");
       } finally {
         setLoading(false);
       }
@@ -31,6 +40,39 @@ const BusinessInfoTable = () => {
 
     fetchBusinesses();
   }, []);
+
+  const validateForm = () => {
+    const errors = {};
+    const phoneRegex = /^\d{10}$/;
+    const urlRegex = /^(https?:\/\/)?([\da-z\.-]+)\.([a-z\.]{2,6})([\/\w \.-]*)*\/?$/;
+
+    if (!formValues.companyName?.trim()) {
+      errors.companyName = "Company name is required";
+    }
+
+    if (!formValues.phoneOffice?.trim()) {
+      errors.phoneOffice = "Phone number is required";
+    } else if (!phoneRegex.test(formValues.phoneOffice)) {
+      errors.phoneOffice = "Phone number must be 10 digits";
+    }
+
+    if (!formValues.description?.trim()) {
+      errors.description = "Description is required";
+    } else if (formValues.description.length < 20) {
+      errors.description = "Description should be at least 20 characters";
+    }
+
+    if (!formValues.address?.trim()) {
+      errors.address = "Address is required";
+    }
+
+    if (formValues.websiteURL && !urlRegex.test(formValues.websiteURL)) {
+      errors.websiteURL = "Please enter a valid URL";
+    }
+
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
 
   const handleEditBusiness = (business) => {
     setSelectedBusiness(business);
@@ -43,20 +85,24 @@ const BusinessInfoTable = () => {
       verification: business.verification
     });
     setImageFile(null);
+    setFormErrors({});
     setShowEditModal(true);
   };
 
   const handleUpdateBusiness = async () => {
     if (!selectedBusiness) return;
+    if (!validateForm()) return;
+    
     setSubmitting(true);
-    setSuccessMessage("");
-    setErrorMessage("");
 
     try {
       const formData = new FormData();
       Object.entries(formValues).forEach(([key, value]) => {
-        formData.append(key, value);
+        if (value !== null && value !== undefined) {
+          formData.append(key, value);
+        }
       });
+      
       if (imageFile) {
         formData.append("image", imageFile);
       }
@@ -71,15 +117,18 @@ const BusinessInfoTable = () => {
       setBusinesses(updated);
       setShowEditModal(false);
       setSelectedBusiness(null);
-      setSuccessMessage("Business updated successfully!");
+      showToast("Business updated successfully!");
     } catch (err) {
       console.error("Error updating business:", err);
-      setErrorMessage("Failed to update business. Check console for details.");
+      const errorMsg = err.response?.data?.error || 
+                      err.response?.data?.message || 
+                      (typeof err.response?.data === "string" ? err.response.data : null) || 
+                      "Failed to update business.";
+      showToast(errorMsg, "danger");
     } finally {
       setSubmitting(false);
     }
   };
-
 
   const handleDeleteBusiness = async (id) => {
     if (!window.confirm("Are you sure you want to delete this business?")) return;
@@ -87,15 +136,13 @@ const BusinessInfoTable = () => {
     try {
       await axios.delete(`/business/${id}`);
       setBusinesses((prev) => prev.filter((b) => b.id !== id));
-      setSuccessMessage("Business deleted successfully.");
+      showToast("Business deleted successfully.");
     } catch (err) {
       console.error("Error deleting business:", err);
-      setErrorMessage("Failed to delete business.");
+      showToast("Failed to delete business.", "danger");
     }
   };
   
-
-
   const handleShowVerifyModal = (business) => {
     setSelectedBusiness(business);
     setShowVerifyModal(true);
@@ -119,19 +166,23 @@ const BusinessInfoTable = () => {
       setBusinesses(updatedBusinesses);
 
       await axios.put(`/business/${id}/verify`, { verification: updatedVerificationStatus });
-      setSuccessMessage(`Verification status changed to ${updatedVerificationStatus}.`);
+      showToast(`Verification status changed to ${updatedVerificationStatus}.`);
     } catch (error) {
       console.error("Error updating verification status:", error);
-      setErrorMessage("Failed to change verification status.");
+      showToast("Failed to change verification status.", "danger");
     }
 
     handleCloseVerifyModal();
   };
 
-
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormValues((prev) => ({ ...prev, [name]: value }));
+    
+    // Clear error when user starts typing
+    if (formErrors[name]) {
+      setFormErrors(prev => ({ ...prev, [name]: "" }));
+    }
   };
 
   const handleImageChange = (e) => {
@@ -144,16 +195,25 @@ const BusinessInfoTable = () => {
 
   return (
     <div>
-      {successMessage && (
-        <div className="alert alert-success" role="alert">
-          {successMessage}
-        </div>
-      )}
-      {errorMessage && (
-        <div className="alert alert-danger" role="alert">
-          {errorMessage}
-        </div>
-      )}
+      <ToastContainer position="top-end" className="p-3">
+        {toasts.map(toast => (
+          <Toast 
+            key={toast.id}
+            onClose={() => setToasts(prev => prev.filter(t => t.id !== toast.id))}
+            show={true} 
+            delay={5000} 
+            autohide
+            bg={toast.type}
+          >
+            <Toast.Header>
+              <strong className="me-auto">Notification</strong>
+            </Toast.Header>
+            <Toast.Body className="text-white">
+              {toast.message}
+            </Toast.Body>
+          </Toast>
+        ))}
+      </ToastContainer>
 
       <Table striped bordered hover responsive>
         <thead>
@@ -223,7 +283,6 @@ const BusinessInfoTable = () => {
                   </Button>
                 </div>
               </td>
-
             </tr>
           ))}
         </tbody>
@@ -243,7 +302,11 @@ const BusinessInfoTable = () => {
                 name="companyName"
                 value={formValues.companyName || ""}
                 onChange={handleChange}
+                isInvalid={!!formErrors.companyName}
               />
+              <Form.Control.Feedback type="invalid">
+                {formErrors.companyName}
+              </Form.Control.Feedback>
             </Form.Group>
 
             <Form.Group controlId="phoneOffice" className="mb-3">
@@ -253,7 +316,11 @@ const BusinessInfoTable = () => {
                 name="phoneOffice"
                 value={formValues.phoneOffice || ""}
                 onChange={handleChange}
+                isInvalid={!!formErrors.phoneOffice}
               />
+              <Form.Control.Feedback type="invalid">
+                {formErrors.phoneOffice}
+              </Form.Control.Feedback>
             </Form.Group>
 
             <Form.Group controlId="address" className="mb-3">
@@ -263,7 +330,11 @@ const BusinessInfoTable = () => {
                 name="address"
                 value={formValues.address || ""}
                 onChange={handleChange}
+                isInvalid={!!formErrors.address}
               />
+              <Form.Control.Feedback type="invalid">
+                {formErrors.address}
+              </Form.Control.Feedback>
             </Form.Group>
 
             <Form.Group controlId="websiteURL" className="mb-3">
@@ -273,7 +344,11 @@ const BusinessInfoTable = () => {
                 name="websiteURL"
                 value={formValues.websiteURL || ""}
                 onChange={handleChange}
+                isInvalid={!!formErrors.websiteURL}
               />
+              <Form.Control.Feedback type="invalid">
+                {formErrors.websiteURL}
+              </Form.Control.Feedback>
             </Form.Group>
 
             <Form.Group controlId="description" className="mb-3">
@@ -284,12 +359,23 @@ const BusinessInfoTable = () => {
                 rows={3}
                 value={formValues.description || ""}
                 onChange={handleChange}
+                isInvalid={!!formErrors.description}
               />
+              <Form.Control.Feedback type="invalid">
+                {formErrors.description}
+              </Form.Control.Feedback>
             </Form.Group>
 
             <Form.Group controlId="file" className="mb-3">
-              <Form.Label>Image</Form.Label>
-              <Form.Control type="file" accept="image/*" onChange={handleImageChange} />
+              <Form.Label>Image (Optional)</Form.Label>
+              <Form.Control 
+                type="file" 
+                accept="image/*" 
+                onChange={handleImageChange} 
+              />
+              <Form.Text className="text-muted">
+                Leave empty to keep current image
+              </Form.Text>
             </Form.Group>
           </Form>
         </Modal.Body>
@@ -297,8 +383,19 @@ const BusinessInfoTable = () => {
           <Button variant="secondary" onClick={() => setShowEditModal(false)}>
             Cancel
           </Button>
-          <Button variant="primary" onClick={handleUpdateBusiness}>
-            Save Changes
+          <Button 
+            variant="primary" 
+            onClick={handleUpdateBusiness}
+            disabled={submitting}
+          >
+            {submitting ? (
+              <>
+                <Spinner animation="border" size="sm" className="me-2" />
+                Saving...
+              </>
+            ) : (
+              "Save Changes"
+            )}
           </Button>
         </Modal.Footer>
       </Modal>

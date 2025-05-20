@@ -1,7 +1,7 @@
 // models/User.js
 import { DataTypes } from 'sequelize';
 import { sequelize } from '../db.js';
-import { Post } from './Post.js';
+// import { Post } from './Post.js';
 import { Advertisement } from './Advertisement.js';
 import { BusinessInfo } from './BusinessInfo.js';
 
@@ -45,8 +45,8 @@ export const User = sequelize.define('User', {
 });
 
 // Relationship with Post
-User.hasMany(Post, { foreignKey: 'uid' });
-Post.belongsTo(User, { foreignKey: 'uid' });
+// User.hasMany(Post, { foreignKey: 'uid' });
+// Post.belongsTo(User, { foreignKey: 'uid' });
 
 // Association with Notes through UserFavoriteNote
 User.associate = (models) => {

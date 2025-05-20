@@ -1,4 +1,4 @@
-import { Vendor } from '../models/vendor.js'; // Assuming Vendor model is imported from your model file
+// import { Vendor } from '../models/vendor.js'; // Assuming Vendor model is imported from your model file
 import { uploadFile } from '../utils/firebase.js'; // Import the Firebase uploader utility
 import { User } from '../models/user.js';
 import bcrypt from "bcryptjs";
@@ -107,40 +107,6 @@ export const getVendors = async (req, res) => {
   }
 };
 
-
-
-// export const updateVerification = async (req, res) => {
-//   try {
-//     const vendorId = req.params.id;
-//     const { verification } = req.body; // Expecting "verified" or "pending"
-
-//     // Ensure verification value is valid
-//     const validStatuses = ["verified", "pending"];
-//     if (!validStatuses.includes(verification)) {
-//       return res.status(400).json({ message: "Invalid verification status" });
-//     }
-
-//     // Find the vendor in the User table where role is "Vendor"
-//     const vendor = await User.findOne({ where: { id: vendorId, role: "Vendor" } });
-    
-//     if (!vendor) {
-//       return res.status(404).json({ message: "Vendor not found" });
-//     }
-
-//     // Update the verification status
-//     await vendor.update({ verification });
-
-//     res.status(200).json({
-//       message: "Vendor verification updated successfully",
-//       vendor,
-//     });
-//   } catch (error) {
-//     console.error(error);
-//     res.status(500).json({ message: "Error updating verification", error });
-//   }
-// };
-
-
 export const updateVendor = async (req, res) => {
   try {
     const { id } = req.params;
@@ -203,8 +169,6 @@ export const updateVendor = async (req, res) => {
     res.status(500).json("An error occurred while updating the vendor.");
   }
 };
-
-
 
 export const deleteVendor = async (req, res) => {
   try {
